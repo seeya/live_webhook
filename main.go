@@ -55,6 +55,13 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventCounter++
+	remoteIP := r.Header.Get("X-Forwarded-For")
+	if remoteIP == "" {
+		remoteIP = r.Header.Get("X-Real-IP")
+	}
+	if remoteIP == "" {
+		remoteIP = r.RemoteAddr
+	}
 	event := WebhookEvent{
 		ID:        eventCounter,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
@@ -63,7 +70,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		Headers:   headers,
 		Query:     r.URL.RawQuery,
 		Body:      string(body),
-		RemoteIP:  r.RemoteAddr,
+		RemoteIP:  remoteIP,
 	}
 
 	historyMu.Lock()
