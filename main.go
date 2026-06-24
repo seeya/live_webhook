@@ -128,6 +128,16 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodDelete {
+		historyMu.Lock()
+		eventHistory = nil
+		eventCounter = 0
+		historyMu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"ok":true}`)
+		return
+	}
+
 	historyMu.Lock()
 	data, _ := json.Marshal(eventHistory)
 	historyMu.Unlock()
@@ -378,6 +388,7 @@ function clearEvents() {
     updateCount();
     updateStorageSize();
     document.getElementById('event-detail').innerHTML = '<div class="detail-empty">Waiting for webhooks...</div>';
+    fetch('/history', { method: 'DELETE' });
 }
 
 function saveToStorage() {
