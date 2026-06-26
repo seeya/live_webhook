@@ -253,10 +253,22 @@ var STORAGE_KEY = 'webhook_events';
 var events = loadFromStorage();
 var selectedId = -1;
 var evtSource = null;
+var reconnectTimer = null;
 
 document.getElementById('webhook-url').textContent = location.origin + '/webhook';
 
 function connectSSE() {
+    if (evtSource) {
+        evtSource.onopen = null;
+        evtSource.onmessage = null;
+        evtSource.onerror = null;
+        evtSource.close();
+        evtSource = null;
+    }
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
     evtSource = new EventSource('/events');
     evtSource.onopen = function() {
         document.getElementById('status-dot').className = 'dot connected';
@@ -275,7 +287,9 @@ function connectSSE() {
     evtSource.onerror = function() {
         document.getElementById('status-dot').className = 'dot';
         document.getElementById('status-text').textContent = 'Disconnected';
-        setTimeout(connectSSE, 3000);
+        if (!reconnectTimer) {
+            reconnectTimer = setTimeout(connectSSE, 3000);
+        }
     };
 }
 
